@@ -1,0 +1,35 @@
+node
+{
+    stage('gitclone')
+    {
+        git 'https://github.com/MithunTechnologiesDevOps/java-web-app-docker.git'
+    }
+    stage('mavenbuild')
+    {
+         def mavenHome= tool name: "maven",type: "maven"
+        sh "${mavenHome}/bin/mvn clean package "
+    }
+    stage('buildimage')
+    {
+        sh 'docker build -t 12ashok/java-web-app:1 .'
+    }
+    stage('LogindockerHub')
+    {
+        sh 'docker login -u *** -p ***'
+    }
+    stage('pushimage')
+    {
+        sh 'docker push 12ashok/java-web-app:1'
+    }
+    stage('deployimageto buildserver')
+    {
+        sshagent(['docker'])
+        {
+            
+            sh 'ssh -o StrictHostKeyChecking=no ubuntu@172.31.35.176 docker service rm javawebapp1 || true '
+            
+            sh 'ssh ubuntu@172.31.35.176 docker service create --name javawebapp1 -p 8081:8080 --replicas 2 12ashok/java-web-app:1 '
+        }
+        
+    }
+}
